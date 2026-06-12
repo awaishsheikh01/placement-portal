@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Placement Drive Management System (PDMS)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & Custom CSS -->
+  <link rel="stylesheet" href="/css/custom.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="flex flex-col min-h-screen">
+  <script>
+    // Initialize Theme immediately to prevent flash
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Header / Navigation -->
+  <header class="w-full py-5 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-slate-950/20 backdrop-blur-md sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="p-2.5 bg-indigo-600/20 rounded-xl border border-indigo-500/30 text-indigo-400">
+        <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight text-white leading-none">PDMS</h1>
+        <span class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Placement Portal</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-btn" title="Toggle Light/Dark Mode">
+        <i data-lucide="sun" class="w-4 h-4 hidden" id="theme-icon-sun"></i>
+        <i data-lucide="moon" class="w-4 h-4" id="theme-icon-moon"></i>
+      </button>
+      <a href="https://github.com" target="_blank" class="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition">
+        <i data-lucide="github" class="w-5 h-5"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl w-full mx-auto px-6 py-8 md:py-16 items-center">
+    
+    <!-- Left Column: Branding / Stats -->
+    <div class="lg:col-span-5 flex flex-col justify-center space-y-6 text-left animate-fade-in">
+      <div class="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs font-semibold text-indigo-400 w-fit">
+        <span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+        Automating Campus Recruitment
+      </div>
+      <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+        Connecting <span class="text-emerald-400">Talent</span> with <span class="text-violet-400">Opportunity</span>.
+      </h2>
+      <p class="text-slate-400 leading-relaxed text-sm md:text-base">
+        A centralized campus recruitment platform. Simplify job drive alerts, eligibility screening, timed technical assessments, and final shortlists for Students, Recruiters, and Administrators alike.
+      </p>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-3 gap-4 pt-4">
+        <div class="p-4 rounded-2xl glass-card text-center border-l-2 border-l-emerald-500">
+          <div class="text-2xl font-bold text-white">95%</div>
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mt-1">Placement Rate</div>
+        </div>
+        <div class="p-4 rounded-2xl glass-card text-center border-l-2 border-l-violet-500">
+          <div class="text-2xl font-bold text-white">50+</div>
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mt-1">Recruiters</div>
+        </div>
+        <div class="p-4 rounded-2xl glass-card text-center border-l-2 border-l-amber-500">
+          <div class="text-2xl font-bold text-white">100%</div>
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mt-1">Automated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Portal Cards & Form Card -->
+    <div class="lg:col-span-7 w-full flex flex-col gap-6 animate-scale-in">
+      <!-- Role Toggle Tabs -->
+      <div class="grid grid-cols-3 p-1.5 bg-slate-950/60 rounded-2xl border border-white/5">
+        <button onclick="switchRole('student')" id="tab-student" class="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-white bg-emerald-600/20 border border-emerald-500/30 glow-text-student">
+          <i data-lucide="user" class="w-4 h-4"></i> Student
+        </button>
+        <button onclick="switchRole('company')" id="tab-company" class="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+          <i data-lucide="building" class="w-4 h-4"></i> Recruiter
+        </button>
+        <button onclick="switchRole('admin')" id="tab-admin" class="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+          <i data-lucide="shield" class="w-4 h-4"></i> Admin
+        </button>
+      </div>
+
+      <!-- Auth Form Container -->
+      <div class="glass-panel-heavy rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- Background Glowing Orb -->
+        <div id="orb-accent" class="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl transition-all duration-500"></div>
+
+        <!-- Dynamic Header -->
+        <div class="mb-6 relative z-10">
+          <h3 id="form-title" class="text-2xl font-extrabold text-white">Student Access</h3>
+          <p id="form-subtitle" class="text-xs text-slate-400 mt-1">Log in to view placement drives and attempt quizzes.</p>
+        </div>
+
+        <!-- STUDENT REGISTRATION FORM (Hidden by default) -->
+        <form id="student-reg-form" class="space-y-4 hidden relative z-10">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Full Name</label>
+              <input type="text" id="s-reg-name" placeholder="John Doe" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Enrollment Number</label>
+              <input type="text" id="s-reg-enroll" placeholder="ENR2026001" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Email Address</label>
+              <input type="email" id="s-reg-email" placeholder="john@university.edu" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Phone Number</label>
+              <input type="text" id="s-reg-phone" placeholder="9876543210" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Branch</label>
+              <select id="s-reg-branch" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input bg-slate-900" required>
+                <option value="" disabled selected>Select Branch</option>
+                <option value="CSE">Computer Science (CSE)</option>
+                <option value="IT">Information Technology (IT)</option>
+                <option value="ECE">Electronics & Comm (ECE)</option>
+                <option value="EE">Electrical (EE)</option>
+                <option value="ME">Mechanical (ME)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Year of Study</label>
+              <select id="s-reg-year" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input bg-slate-900" required>
+                <option value="" disabled selected>Select Year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Current CGPA</label>
+              <input type="number" id="s-reg-cgpa" placeholder="9.2" step="0.01" min="0" max="10" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+              <input type="password" id="s-reg-password" placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl text-sm glass-input" required>
+            </div>
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 mt-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Create Student Account
+          </button>
+          <p class="text-center text-xs text-slate-400 mt-4">
+            Already registered? <a href="#" onclick="toggleStudentForm('login')" class="text-emerald-400 hover:underline">Log In Here</a>
+          </p>
+        </form>
+
+        <!-- STUDENT LOGIN FORM -->
+        <form id="student-login-form" class="space-y-4 relative z-10">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Enrollment Number</label>
+            <input type="text" id="s-log-enroll" placeholder="ENR2026001" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+            <input type="password" id="s-log-password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i> Log In as Student
+          </button>
+          <p class="text-center text-xs text-slate-400 mt-4">
+            New applicant? <a href="#" onclick="toggleStudentForm('reg')" class="text-emerald-400 hover:underline">Register Account</a>
+          </p>
+        </form>
+
+        <!-- RECRUITER REGISTRATION FORM (Hidden by default) -->
+        <form id="company-reg-form" class="space-y-4 hidden relative z-10">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Company Name</label>
+            <input type="text" id="c-reg-name" placeholder="Google Inc." class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Corporate Email</label>
+            <input type="email" id="c-reg-email" placeholder="hr@google.com" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+            <input type="password" id="c-reg-password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <button type="submit" class="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-violet-900/20 flex items-center justify-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Create Recruiter Account
+          </button>
+          <p class="text-center text-xs text-slate-400 mt-4">
+            Already registered? <a href="#" onclick="toggleCompanyForm('login')" class="text-violet-400 hover:underline">Log In Here</a>
+          </p>
+        </form>
+
+        <!-- RECRUITER LOGIN FORM (Hidden by default) -->
+        <form id="company-login-form" class="space-y-4 hidden relative z-10">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Corporate Email</label>
+            <input type="email" id="c-log-email" placeholder="hr@google.com" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+            <input type="password" id="c-log-password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <button type="submit" class="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-violet-900/20 flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i> Log In as Recruiter
+          </button>
+          <p class="text-center text-xs text-slate-400 mt-4">
+            New corporate recruiter? <a href="#" onclick="toggleCompanyForm('reg')" class="text-violet-400 hover:underline">Register Corporate Account</a>
+          </p>
+        </form>
+
+        <!-- ADMIN LOGIN FORM (Hidden by default) -->
+        <form id="admin-login-form" class="space-y-4 hidden relative z-10">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Admin Username</label>
+            <input type="text" id="a-log-username" placeholder="admin" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+            <input type="password" id="a-log-password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl text-sm glass-input" required>
+          </div>
+          <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Log In as Admin
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full py-6 text-center border-t border-white/5 text-slate-500 text-xs mt-auto">
+    Placement Drive Management System (PDMS) © 2026. Made with Tailwind CSS & Node.js.
+  </footer>
+
+  <!-- Client-side Routing & Logic Script -->
+  <script>
+    let currentRole = 'student';
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Helper: Toast Message
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'info';
+      if (type === 'success') icon = 'check-circle';
+      if (type === 'error') icon = 'alert-triangle';
+      
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Tab switcher
+    function switchRole(role) {
+      currentRole = role;
+      
+      const tabStudent = document.getElementById('tab-student');
+      const tabCompany = document.getElementById('tab-company');
+      const tabAdmin = document.getElementById('tab-admin');
+      
+      const formTitle = document.getElementById('form-title');
+      const formSubtitle = document.getElementById('form-subtitle');
+      const orbAccent = document.getElementById('orb-accent');
+      
+      // Hide all forms first
+      document.getElementById('student-login-form').classList.add('hidden');
+      document.getElementById('student-reg-form').classList.add('hidden');
+      document.getElementById('company-login-form').classList.add('hidden');
+      document.getElementById('company-reg-form').classList.add('hidden');
+      document.getElementById('admin-login-form').classList.add('hidden');
+
+      // Reset tab states
+      [tabStudent, tabCompany, tabAdmin].forEach(tab => {
+        tab.className = 'py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-white';
+      });
+
+      if (role === 'student') {
+        tabStudent.className = 'py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-white bg-emerald-600/20 border border-emerald-500/30 glow-text-student';
+        formTitle.textContent = 'Student Access';
+        formSubtitle.textContent = 'Log in to view placement drives and attempt quizzes.';
+        orbAccent.className = 'absolute -right-16 -top-16 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl transition-all duration-500';
+        document.getElementById('student-login-form').classList.remove('hidden');
+      } else if (role === 'company') {
+        tabCompany.className = 'py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-white bg-violet-600/20 border border-violet-500/30 glow-text-company';
+        formTitle.textContent = 'Recruiter Portal';
+        formSubtitle.textContent = 'Log in to post job vacancies, manage quizzes, and review students.';
+        orbAccent.className = 'absolute -right-16 -top-16 w-32 h-32 rounded-full bg-violet-500/10 blur-3xl transition-all duration-500';
+        document.getElementById('company-login-form').classList.remove('hidden');
+      } else if (role === 'admin') {
+        tabAdmin.className = 'py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-white bg-amber-600/20 border border-amber-500/30 glow-text-admin';
+        formTitle.textContent = 'System Administration';
+        formSubtitle.textContent = 'Authorized administrators only. Approve recruitment drives and inspect stats.';
+        orbAccent.className = 'absolute -right-16 -top-16 w-32 h-32 rounded-full bg-amber-500/10 blur-3xl transition-all duration-500';
+        document.getElementById('admin-login-form').classList.remove('hidden');
+      }
+    }
+
+    // Toggle sub-forms (Login / Registration)
+    function toggleStudentForm(mode) {
+      if (mode === 'reg') {
+        document.getElementById('student-login-form').classList.add('hidden');
+        document.getElementById('student-reg-form').classList.remove('hidden');
+        document.getElementById('form-title').textContent = 'Create Student Account';
+      } else {
+        document.getElementById('student-reg-form').classList.add('hidden');
+        document.getElementById('student-login-form').classList.remove('hidden');
+        document.getElementById('form-title').textContent = 'Student Access';
+      }
+    }
+
+    function toggleCompanyForm(mode) {
+      if (mode === 'reg') {
+        document.getElementById('company-login-form').classList.add('hidden');
+        document.getElementById('company-reg-form').classList.remove('hidden');
+        document.getElementById('form-title').textContent = 'Corporate Registration';
+      } else {
+        document.getElementById('company-reg-form').classList.add('hidden');
+        document.getElementById('company-login-form').classList.remove('hidden');
+        document.getElementById('form-title').textContent = 'Recruiter Portal';
+      }
+    }
+
+    // ==========================================
+    // FORM SUBMISSION EVENT HANDLERS
+    // ==========================================
+
+    // Student Registration
+    document.getElementById('student-reg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('s-reg-name').value,
+        enrollmentNumber: document.getElementById('s-reg-enroll').value,
+        email: document.getElementById('s-reg-email').value,
+        phone: document.getElementById('s-reg-phone').value,
+        branch: document.getElementById('s-reg-branch').value,
+        year: document.getElementById('s-reg-year').value,
+        cgpa: document.getElementById('s-reg-cgpa').value,
+        password: document.getElementById('s-reg-password').value
+      };
+
+      try {
+        const response = await fetch('/api/auth/register-student', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast(data.message, 'success');
+          toggleStudentForm('login');
+          document.getElementById('s-log-enroll').value = payload.enrollmentNumber;
+        } else {
+          showToast(data.message || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error, please try again.', 'error');
+      }
+    });
+
+    // Student Login
+    document.getElementById('student-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        enrollmentNumber: document.getElementById('s-log-enroll').value,
+        password: document.getElementById('s-log-password').value
+      };
+
+      try {
+        const response = await fetch('/api/auth/login-student', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showToast('Login successful! Redirecting...', 'success');
+          setTimeout(() => window.location.href = '/student.html', 1000);
+        } else {
+          showToast(data.message || 'Credentials invalid.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    });
+
+    // Recruiter Registration
+    document.getElementById('company-reg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        companyName: document.getElementById('c-reg-name').value,
+        email: document.getElementById('c-reg-email').value,
+        password: document.getElementById('c-reg-password').value
+      };
+
+      try {
+        const response = await fetch('/api/auth/register-company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast(data.message, 'success');
+          toggleCompanyForm('login');
+          document.getElementById('c-log-email').value = payload.email;
+        } else {
+          showToast(data.message || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection error.', 'error');
+      }
+    });
+
+    // Recruiter Login
+    document.getElementById('company-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        email: document.getElementById('c-log-email').value,
+        password: document.getElementById('c-log-password').value
+      };
+
+      try {
+        const response = await fetch('/api/auth/login-company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showToast('Login successful! Redirecting...', 'success');
+          setTimeout(() => window.location.href = '/company.html', 1000);
+        } else {
+          showToast(data.message || 'Recruiter login failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    });
+
+    // Admin Login
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        username: document.getElementById('a-log-username').value,
+        password: document.getElementById('a-log-password').value
+      };
+
+      try {
+        const response = await fetch('/api/auth/login-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showToast('Admin access authorized. Redirecting...', 'success');
+          setTimeout(() => window.location.href = '/admin.html', 1000);
+        } else {
+          showToast(data.message || 'Admin authorization failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    });
+
+    // Redirect to dashboard if token exists
+    window.addEventListener('load', () => {
+      // Set correct theme icon state on load
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      updateThemeIcon(currentTheme === 'light');
+
+      const token = localStorage.getItem('token');
+      const userRaw = localStorage.getItem('user');
+      if (token && userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user.role === 'student') window.location.href = '/student.html';
+        else if (user.role === 'company') window.location.href = '/company.html';
+        else if (user.role === 'admin') window.location.href = '/admin.html';
+      }
+    });
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateThemeIcon(isLight);
+    }
+
+    function updateThemeIcon(isLight) {
+      const sun = document.getElementById('theme-icon-sun');
+      const moon = document.getElementById('theme-icon-moon');
+      if (!sun || !moon) return;
+      if (isLight) {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+      } else {
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

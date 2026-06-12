@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - PDMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="flex flex-col min-h-screen">
+  <script>
+    // Initialize Theme immediately to prevent flash
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+
+  <div id="toast-container"></div>
+
+  <!-- Header -->
+  <header class="w-full py-4 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-slate-950/40 backdrop-blur-md sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-emerald-600/20 rounded-xl border border-emerald-500/30 text-emerald-400">
+        <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-none">PDMS</h1>
+        <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-semibold">Student Portal</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-btn" title="Toggle Light/Dark Mode">
+        <i data-lucide="sun" class="w-4 h-4 hidden" id="theme-icon-sun"></i>
+        <i data-lucide="moon" class="w-4 h-4" id="theme-icon-moon"></i>
+      </button>
+      <div class="hidden md:flex flex-col text-right">
+        <span id="user-display-name" class="text-sm font-semibold text-white">Student Name</span>
+        <span id="user-display-branch" class="text-[10px] text-slate-400">Branch Name</span>
+      </div>
+      <button onclick="logout()" class="flex items-center gap-2 px-3 py-1.5 bg-red-950/30 border border-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-semibold rounded-lg transition-all">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Content Grid -->
+  <div class="flex-grow max-w-7xl w-full mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Sidebar (Profile Card) -->
+    <div class="lg:col-span-3 space-y-6">
+      <div class="glass-panel-heavy rounded-2xl p-6 relative overflow-hidden">
+        <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl"></div>
+        
+        <!-- Edit Profile Trigger -->
+        <button onclick="openProfileEditModal()" class="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 text-slate-400 hover:text-white transition" title="Edit Profile">
+          <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <div class="flex flex-col items-center text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-extrabold text-2xl shadow-inner">
+            <span id="profile-avatar">S</span>
+          </div>
+          <div>
+            <h2 id="profile-name" class="text-lg font-bold text-white">Student Name</h2>
+            <p id="profile-enroll" class="text-xs text-slate-400">ENR000000</p>
+          </div>
+        </div>
+
+        <div class="border-t border-white/5 my-5 pt-4 space-y-3 text-xs text-slate-300">
+          <div class="flex justify-between">
+            <span class="text-slate-450">Branch:</span>
+            <span id="profile-branch" class="font-semibold text-white">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-450">Year:</span>
+            <span id="profile-year" class="font-semibold text-white">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-450">CGPA:</span>
+            <span id="profile-cgpa" class="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full font-bold">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-450">Email:</span>
+            <span id="profile-email" class="font-semibold text-white truncate max-w-[120px]">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-450">Phone:</span>
+            <span id="profile-phone" class="font-semibold text-white">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl glass-panel text-center">
+          <div id="stat-applied" class="text-xl font-bold text-white">0</div>
+          <div class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mt-1">Applications</div>
+        </div>
+        <div class="p-4 rounded-xl glass-panel text-center">
+          <div id="stat-qualified" class="text-xl font-bold text-emerald-400">0</div>
+          <div class="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mt-1">Shortlisted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Section (Drives and Assessments) -->
+    <main class="lg:col-span-9 space-y-6">
+      
+      <!-- Tab Selector -->
+      <div class="flex gap-2 border-b border-white/5 pb-px">
+        <button onclick="showTab('drives')" id="btn-tab-drives" class="pb-3 px-2 border-b-2 border-emerald-500 font-semibold text-white text-sm flex items-center gap-2 transition-all">
+          <i data-lucide="briefcase" class="w-4 h-4"></i> Placement Drives
+        </button>
+        <button onclick="showTab('assessments')" id="btn-tab-assessments" class="pb-3 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-semibold text-sm flex items-center gap-2 transition-all">
+          <i data-lucide="award" class="w-4 h-4"></i> Quiz Assessments & Results
+        </button>
+      </div>
+
+      <!-- Drives Tab Content -->
+      <div id="tab-content-drives" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white">Approved Placement Campaigns</h3>
+          <span class="text-xs text-slate-400" id="drives-count">0 Drives Found</span>
+        </div>
+        <div id="drives-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Drive Card templates generated by JS -->
+          <div class="col-span-full py-12 text-center text-slate-500 glass-panel rounded-2xl flex flex-col items-center justify-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 opacity-55"></i>
+            <span>Loading ongoing placement campaigns...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assessments Tab Content -->
+      <div id="tab-content-assessments" class="space-y-6 hidden">
+        <!-- Active Quizzes to attempt -->
+        <div class="space-y-3">
+          <h3 class="text-base font-bold text-white">Active Assessments</h3>
+          <div id="active-quizzes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+
+        <!-- Past results table -->
+        <div class="space-y-3 pt-4 border-t border-white/5">
+          <h3 class="text-base font-bold text-white">Your Performance Records</h3>
+          <div class="glass-panel rounded-2xl overflow-hidden overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-white/5 bg-slate-900/50 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <th class="py-3 px-4">Company & Role</th>
+                  <th class="py-3 px-4 text-center">Score Obtained</th>
+                  <th class="py-3 px-4 text-center">Total Questions</th>
+                  <th class="py-3 px-4 text-center">Eligibility / Status</th>
+                  <th class="py-3 px-4 text-right">Attempt Date</th>
+                </tr>
+              </thead>
+              <tbody id="results-table-body" class="divide-y divide-white/5 text-xs text-slate-350">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-slate-500">No test history records found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- TIMED ASSESSMENT OVERLAY MODAL -->
+  <div id="quiz-modal" class="fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4 hidden backdrop-blur-md">
+    <div class="glass-panel-heavy rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+      
+      <!-- Top header bar with timer -->
+      <div class="p-6 border-b border-white/10 flex items-center justify-between gradient-student text-white">
+        <div>
+          <h2 id="quiz-modal-title" class="text-lg font-bold">Assessment Test</h2>
+          <span class="text-xs opacity-75">Answer all questions carefully.</span>
+        </div>
+        <!-- Live Timer Box -->
+        <div class="px-4 py-2 bg-slate-950/50 backdrop-blur-md rounded-2xl border border-white/20 flex items-center gap-2 font-bold font-mono">
+          <i data-lucide="timer" class="w-4 h-4 text-emerald-400 animate-pulse"></i>
+          <span id="quiz-timer-display" class="text-base text-emerald-300">00:00</span>
+        </div>
+      </div>
+
+      <!-- Questions scrollable panel -->
+      <div id="quiz-questions-container" class="p-6 overflow-y-auto flex-grow space-y-6 max-h-[60vh]">
+        <!-- Set of questions loaded via JS -->
+      </div>
+
+      <!-- Bottom action bar -->
+      <div class="p-6 border-t border-white/5 bg-slate-900/40 flex items-center justify-between">
+        <span class="text-xs text-slate-400" id="quiz-progress-display">Question 0 of 0 answered</span>
+        <button onclick="confirmSubmitQuiz()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-950/30 flex items-center gap-2">
+          <i data-lucide="check-square" class="w-4 h-4"></i> Submit Assessment
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULT SCORE CARD OVERLAY MODAL -->
+  <div id="result-modal" class="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative overflow-hidden animate-scale-in">
+      <div id="result-modal-accent" class="absolute -top-16 -left-16 w-36 h-36 rounded-full blur-3xl opacity-20"></div>
+      
+      <div class="flex justify-center mb-4">
+        <div id="result-badge-icon" class="p-4 rounded-full flex items-center justify-center border shadow-lg">
+          <i data-lucide="award" class="w-10 h-10"></i>
+        </div>
+      </div>
+      
+      <h3 id="result-heading" class="text-2xl font-black text-white">Quiz Completed!</h3>
+      <p id="result-message" class="text-slate-400 text-xs mt-1">Here is your assessment scorecard.</p>
+
+      <div class="my-6 p-4 rounded-2xl bg-slate-900/50 border border-white/5 space-y-4">
+        <div class="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+          <span class="text-slate-400">Total Score:</span>
+          <span id="result-score-text" class="font-extrabold text-white text-lg">-</span>
+        </div>
+        <div class="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+          <span class="text-slate-400">Percentage:</span>
+          <span id="result-percentage-text" class="font-extrabold text-white text-lg">-</span>
+        </div>
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-slate-400">Qualification Status:</span>
+          <span id="result-status-badge" class="px-3 py-1 text-xs font-bold rounded-full">-</span>
+        </div>
+      </div>
+
+      <button onclick="closeResultModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition">
+        Return to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- PROFILE EDIT OVERLAY MODAL -->
+  <div id="profile-modal" class="fixed inset-0 z-50 bg-slate-950/70 flex items-center justify-center p-4 hidden backdrop-blur-sm animate-fade-in">
+    <div class="glass-panel-heavy rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-emerald-500/5 blur-3xl"></div>
+      
+      <div class="mb-5">
+        <h3 class="text-lg font-bold text-white">Edit Profile Details</h3>
+        <p class="text-xs text-slate-400 mt-1">Updates will affect your campaign eligibility indicators instantly.</p>
+      </div>
+
+      <form id="profile-edit-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5">Full Name</label>
+          <input type="text" id="pe-name" class="w-full px-4 py-2 rounded-xl text-sm glass-input" required>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Email Address</label>
+            <input type="email" id="pe-email" class="w-full px-4 py-2 rounded-xl text-sm glass-input" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Phone Number</label>
+            <input type="text" id="pe-phone" class="w-full px-4 py-2 rounded-xl text-sm glass-input" required>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Branch</label>
+            <select id="pe-branch" class="w-full px-2 py-2 rounded-xl text-xs glass-input bg-slate-900" required>
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="EE">EE</option>
+              <option value="ME">ME</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">Year</label>
+            <select id="pe-year" class="w-full px-2 py-2 rounded-xl text-xs glass-input bg-slate-900" required>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1.5">CGPA</label>
+            <input type="number" id="pe-cgpa" step="0.01" min="0" max="10" class="w-full px-2 py-2 rounded-xl text-xs glass-input" required>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
+          <button type="button" onclick="closeProfileEditModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition">Cancel</button>
+          <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-950/20">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full py-6 text-center border-t border-white/5 text-slate-500 text-xs mt-auto">
+    Placement Drive Management System (PDMS) © 2026.
+  </footer>
+
+  <script>
+    let studentProfile = null;
+    let drives = [];
+    let activeQuiz = null;
+    let quizTimerInterval = null;
+    let secondsLeft = 0;
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'info';
+      if (type === 'success') icon = 'check-circle';
+      if (type === 'error') icon = 'alert-triangle';
+      
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Token retrieval helper
+    function getHeaders() {
+      const token = localStorage.getItem('token');
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    // Check Authentication
+    window.addEventListener('load', () => {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      updateThemeIcon(currentTheme === 'light');
+
+      const token = localStorage.getItem('token');
+      const userRaw = localStorage.getItem('user');
+      if (!token || !userRaw) {
+        window.location.href = '/index.html';
+        return;
+      }
+      const user = JSON.parse(userRaw);
+      if (user.role !== 'student') {
+        window.location.href = '/index.html';
+        return;
+      }
+      
+      // Initialize Dashboard
+      fetchProfile();
+      fetchDrives();
+      fetchResults();
+    });
+
+    // Logout function
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/index.html';
+    }
+
+    // Tab switcher
+    function showTab(tabId) {
+      const tabDrives = document.getElementById('tab-content-drives');
+      const tabAssessments = document.getElementById('tab-content-assessments');
+      const btnDrives = document.getElementById('btn-tab-drives');
+      const btnAssessments = document.getElementById('btn-tab-assessments');
+
+      if (tabId === 'drives') {
+        tabDrives.classList.remove('hidden');
+        tabAssessments.classList.add('hidden');
+        btnDrives.className = 'pb-3 px-2 border-b-2 border-emerald-500 font-semibold text-white text-sm flex items-center gap-2 transition-all';
+        btnAssessments.className = 'pb-3 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-semibold text-sm flex items-center gap-2 transition-all';
+        fetchDrives();
+      } else {
+        tabDrives.classList.add('hidden');
+        tabAssessments.classList.remove('hidden');
+        btnDrives.className = 'pb-3 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-semibold text-sm flex items-center gap-2 transition-all';
+        btnAssessments.className = 'pb-3 px-2 border-b-2 border-emerald-500 font-semibold text-white text-sm flex items-center gap-2 transition-all';
+        fetchDrives().then(fetchResults);
+      }
+    }
+
+    // Fetch student profile details
+    async function fetchProfile() {
+      try {
+        const response = await fetch('/api/student/profile', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Failed to load profile.');
+        studentProfile = await response.json();
+        
+        // Populate profile card elements
+        document.getElementById('profile-avatar').textContent = studentProfile.name.charAt(0).toUpperCase();
+        document.getElementById('profile-name').textContent = studentProfile.name;
+        document.getElementById('profile-enroll').textContent = studentProfile.enrollmentNumber;
+        document.getElementById('profile-branch').textContent = studentProfile.branch;
+        document.getElementById('profile-year').textContent = studentProfile.year;
+        document.getElementById('profile-cgpa').textContent = studentProfile.cgpa.toFixed(2);
+        document.getElementById('profile-email').textContent = studentProfile.email;
+        document.getElementById('profile-phone').textContent = studentProfile.phone;
+
+        document.getElementById('user-display-name').textContent = studentProfile.name;
+        document.getElementById('user-display-branch').textContent = `${studentProfile.branch} | ${studentProfile.year}`;
+      } catch (err) {
+        showToast('Error syncing profile metrics.', 'error');
+        logout();
+      }
+    }
+
+    // Fetch placement drives list
+    async function fetchDrives() {
+      try {
+        const response = await fetch('/api/student/drives', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Drives fetch error.');
+        drives = await response.json();
+        
+        document.getElementById('drives-count').textContent = `${drives.length} Campaign${drives.length !== 1 ? 's' : ''} Found`;
+        renderDrives();
+        renderActiveQuizzes();
+        updateStats();
+      } catch (err) {
+        showToast('Error loading placement drives.', 'error');
+      }
+    }
+
+    // Render Drive Cards
+    function renderDrives() {
+      const container = document.getElementById('drives-list');
+      if (drives.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 glass-panel rounded-2xl flex flex-col items-center justify-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 opacity-55"></i>
+            <span>No drives currently available. Check back later!</span>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = drives.map(drive => {
+        const deadlineDate = new Date(drive.applicationDeadline);
+        const hasPassedDeadline = new Date() > deadlineDate;
+        const driveDateFormatted = new Date(drive.driveDate).toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', year: 'numeric'
+        });
+        const deadlineFormatted = deadlineDate.toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+        });
+
+        // Determine badge style
+        let badgeHtml = '';
+        let buttonHtml = '';
+
+        if (drive.hasApplied) {
+          let statusColor = 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+          if (drive.applicationStatus === 'Shortlisted') {
+            statusColor = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+          } else if (drive.applicationStatus === 'Rejected') {
+            statusColor = 'bg-red-500/10 border-red-500/30 text-red-400';
+          }
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-bold rounded-full border ${statusColor}">Applied (${drive.applicationStatus})</span>`;
+          buttonHtml = `<div class="text-xs font-medium text-slate-405 flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i> Already Applied</div>`;
+        } else if (!drive.isEligible) {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-bold rounded-full border bg-red-500/10 border-red-500/20 text-red-400">Not Eligible</span>`;
+          buttonHtml = `
+            <div class="w-full text-left space-y-1">
+              <span class="text-[10px] text-red-400 font-semibold block uppercase">Ineligibility Reason:</span>
+              <p class="text-xs text-slate-400 leading-tight">${drive.eligibilityReason}</p>
+            </div>`;
+        } else if (drive.isClosed || hasPassedDeadline) {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-bold rounded-full border bg-slate-800 border-slate-700 text-slate-500">Closed</span>`;
+          buttonHtml = `<button disabled class="w-full py-2 bg-slate-900 border border-white/5 text-slate-500 text-xs font-semibold rounded-xl cursor-not-allowed">Application Closed</button>`;
+        } else {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-bold rounded-full border bg-emerald-500/10 border-emerald-500/30 text-emerald-400">Eligible</span>`;
+          buttonHtml = `<button onclick="applyDrive('${drive._id}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-900/10 flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i> Apply Now</button>`;
+        }
+
+        return `
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-black text-white leading-tight">${drive.jobRole}</h4>
+                <p class="text-xs text-slate-405 mt-0.5">${drive.companyName}</p>
+              </div>
+              ${badgeHtml}
+            </div>
+
+            <!-- Job Description -->
+            ${drive.jobDescription ? `
+              <div class="text-xs text-slate-400 bg-slate-950/15 p-3 rounded-xl border border-white/5 my-1 max-h-[100px] overflow-y-auto">
+                <span class="text-[9px] text-emerald-450 font-bold uppercase block mb-1">Job Description</span>
+                <p class="leading-relaxed text-slate-350" style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(drive.jobDescription)}</p>
+              </div>
+            ` : ''}
+
+            <div class="grid grid-cols-2 gap-3 py-2 border-t border-b border-white/5 text-xs text-slate-300">
+              <div class="space-y-1">
+                <span class="text-[10px] text-slate-450 uppercase tracking-wider block">Compensation:</span>
+                <span class="font-bold text-white text-sm">${drive.package}</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-[10px] text-slate-450 uppercase tracking-wider block">Drive Date:</span>
+                <span class="font-bold text-white text-sm">${driveDateFormatted}</span>
+              </div>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-400">
+              <div class="flex justify-between">
+                <span>Eligible Branches:</span>
+                <span class="text-white font-medium">${drive.eligibleBranches.join(', ')}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Min CGPA Requirement:</span>
+                <span class="text-white font-semibold">${drive.minimumCgpa.toFixed(1)}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Deadline:</span>
+                <span class="text-white font-medium ${hasPassedDeadline ? 'text-red-400' : ''}">${deadlineFormatted}</span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-center min-h-[44px]">
+              ${buttonHtml}
+            </div>
+          </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Apply for a drive
+    async function applyDrive(driveId) {
+      try {
+        const response = await fetch(`/api/student/drives/${driveId}/apply`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast(data.message, 'success');
+          fetchDrives();
+        } else {
+          showToast(data.message || 'Application failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    }
+
+    // Render Quizzes that can be attempted (under My Applications / Assessments)
+    function renderActiveQuizzes() {
+      const list = document.getElementById('active-quizzes-list');
+      const appliedDrives = drives.filter(d => d.hasApplied);
+      
+      if (appliedDrives.length === 0) {
+        list.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-500 bg-slate-900/30 rounded-xl border border-dashed border-white/5">
+            You must apply to eligible drives to see associated assessments.
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = appliedDrives.map(drive => {
+        // Find if they have taken this quiz
+        return `
+          <div class="glass-card rounded-xl p-5 flex items-center justify-between gap-4">
+            <div class="space-y-1">
+              <h4 class="text-sm font-bold text-white">${drive.companyName} Assessment</h4>
+              <p class="text-xs text-slate-400">Role: ${drive.jobRole}</p>
+            </div>
+            <div>
+              <button onclick="attemptQuiz('${drive._id}', '${drive.companyName}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-lg shadow-indigo-950/20">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i> Attempt Quiz
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Start / Fetch Quiz
+    async function attemptQuiz(driveId, companyName) {
+      try {
+        const response = await fetch(`/api/student/quizzes/drive/${driveId}`, { headers: getHeaders() });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showToast(data.message || 'Unable to retrieve quiz.', 'error');
+          return;
+        }
+
+        activeQuiz = data;
+        openQuizModal(companyName);
+      } catch (err) {
+        showToast('Network error loading test questions.', 'error');
+      }
+    }
+
+    // Open Quiz Modal & Initialize Timer
+    function openQuizModal(companyName) {
+      const modal = document.getElementById('quiz-modal');
+      const timerDisplay = document.getElementById('quiz-timer-display');
+      const titleDisplay = document.getElementById('quiz-modal-title');
+      const questionsContainer = document.getElementById('quiz-questions-container');
+
+      titleDisplay.textContent = `${companyName} - ${activeQuiz.title}`;
+      secondsLeft = activeQuiz.duration * 60;
+      updateTimerDisplay();
+
+      // Clear questions container
+      questionsContainer.innerHTML = activeQuiz.questions.map((q, idx) => {
+        const optionsHtml = q.options.map((opt, optIdx) => `
+          <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-white/5 hover:bg-slate-900/70 hover:border-white/10 cursor-pointer transition">
+            <input type="radio" name="question-${idx}" value="${optIdx}" class="w-4 h-4 accent-emerald-500 cursor-pointer" onchange="updateQuizProgress()">
+            <span class="text-xs text-slate-300 font-medium">${opt}</span>
+          </label>
+        `).join('');
+
+        return `
+          <div class="space-y-3 p-5 rounded-2xl bg-slate-900/20 border border-white/5 animate-fade-in" style="animation-delay: ${idx * 0.05}s">
+            <div class="flex items-start gap-2.5">
+              <span class="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-lg">Q${idx + 1}</span>
+              <h4 class="text-sm font-semibold text-white leading-relaxed">${q.questionText}</h4>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-8">
+              ${optionsHtml}
+            </div>
+          </div>`;
+      }).join('');
+
+      // Update progress text
+      updateQuizProgress();
+
+      // Show modal
+      modal.classList.remove('hidden');
+
+      // Start timer interval
+      clearInterval(quizTimerInterval);
+      quizTimerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+        if (secondsLeft <= 0) {
+          clearInterval(quizTimerInterval);
+          showToast('Time expired! Submitting test automatically...', 'info');
+          submitAnswers(true);
+        }
+      }, 1000);
+    }
+
+    // Display timer tick
+    function updateTimerDisplay() {
+      const minutes = Math.floor(secondsLeft / 60);
+      const seconds = secondsLeft % 60;
+      const display = document.getElementById('quiz-timer-display');
+      display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      // Flash red in last 60 seconds
+      if (secondsLeft < 60) {
+        display.className = 'text-base text-red-400 animate-pulse';
+      } else {
+        display.className = 'text-base text-emerald-350';
+      }
+    }
+
+    // Show answered count
+    function updateQuizProgress() {
+      const total = activeQuiz.questions.length;
+      let answered = 0;
+      for (let i = 0; i < total; i++) {
+        const checked = document.querySelector(`input[name="question-${i}"]:checked`);
+        if (checked) answered++;
+      }
+      document.getElementById('quiz-progress-display').textContent = `Question ${answered} of ${total} answered`;
+    }
+
+    // Verify submission
+    function confirmSubmitQuiz() {
+      const total = activeQuiz.questions.length;
+      let answered = 0;
+      for (let i = 0; i < total; i++) {
+        if (document.querySelector(`input[name="question-${i}"]:checked`)) answered++;
+      }
+
+      if (answered < total) {
+        if (!confirm(`You have only answered ${answered}/${total} questions. Are you sure you want to submit?`)) {
+          return;
+        }
+      } else {
+        if (!confirm('Submit test answers now?')) return;
+      }
+      submitAnswers(false);
+    }
+
+    // Send answers
+    async function submitAnswers(autoSubmitted = false) {
+      clearInterval(quizTimerInterval);
+      
+      const payload = { answers: {} };
+      activeQuiz.questions.forEach((q, idx) => {
+        const checked = document.querySelector(`input[name="question-${idx}"]:checked`);
+        if (checked) {
+          payload.answers[idx] = parseInt(checked.value);
+        }
+      });
+
+      try {
+        const response = await fetch(`/api/student/quizzes/${activeQuiz._id}/submit`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        // Close test window
+        document.getElementById('quiz-modal').classList.add('hidden');
+
+        if (response.ok) {
+          // Open results modal
+          openResultModal(data.score, data.totalQuestions, data.status);
+          fetchDrives();
+          fetchResults();
+        } else {
+          showToast(data.message || 'Error recording submissions.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed during test submit.', 'error');
+      }
+    }
+
+    // Open scorecard
+    function openResultModal(score, total, status) {
+      document.getElementById('result-score-text').textContent = `${score} / ${total}`;
+      const percentage = Math.round((score / total) * 100);
+      document.getElementById('result-percentage-text').textContent = `${percentage}%`;
+
+      const badge = document.getElementById('result-status-badge');
+      const iconContainer = document.getElementById('result-badge-icon');
+      const accent = document.getElementById('result-modal-accent');
+      
+      badge.textContent = status;
+      if (status === 'Qualified') {
+        badge.className = 'px-3 py-1 text-xs font-bold rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400';
+        iconContainer.className = 'p-4 rounded-full flex items-center justify-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shadow-lg';
+        accent.className = 'absolute -top-16 -left-16 w-36 h-36 rounded-full blur-3xl opacity-20 bg-emerald-500';
+      } else {
+        badge.className = 'px-3 py-1 text-xs font-bold rounded-full bg-red-500/10 border border-red-500/30 text-red-400';
+        iconContainer.className = 'p-4 rounded-full flex items-center justify-center bg-red-500/10 border border-red-500/30 text-red-400 shadow-lg';
+        accent.className = 'absolute -top-16 -left-16 w-36 h-36 rounded-full blur-3xl opacity-20 bg-red-500';
+      }
+
+      document.getElementById('result-modal').classList.remove('hidden');
+    }
+
+    function closeResultModal() {
+      document.getElementById('result-modal').classList.add('hidden');
+    }
+
+    // Fetch past quiz results
+    async function fetchResults() {
+      try {
+        const response = await fetch('/api/student/results', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Results fetch error.');
+        const results = await response.json();
+        
+        renderResultsTable(results);
+      } catch (err) {
+        showToast('Error syncing results.', 'error');
+      }
+    }
+
+    // Render results table
+    function renderResultsTable(results) {
+      const tbody = document.getElementById('results-table-body');
+      
+      if (results.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-slate-500">No test history records found.</td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = results.map(res => {
+        const companyName = res.drive ? res.drive.companyName : 'N/A';
+        const jobRole = res.drive ? res.drive.jobRole : 'N/A';
+        const date = new Date(res.createdAt).toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', year: 'numeric'
+        });
+        
+        let statusBadge = '';
+        if (res.status === 'Qualified') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">Qualified</span>`;
+        } else if (res.status === 'Rejected') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 border border-red-500/20 text-red-400">Rejected</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-450">Pending</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-900/20 transition duration-150">
+            <td class="py-3 px-4">
+              <div class="font-bold text-white">${companyName}</div>
+              <div class="text-[10px] text-slate-400 font-medium">${jobRole}</div>
+            </td>
+            <td class="py-3 px-4 text-center font-bold text-white text-sm">${res.score}</td>
+            <td class="py-3 px-4 text-center font-bold text-slate-350 text-sm">${res.totalQuestions}</td>
+            <td class="py-3 px-4 text-center">${statusBadge}</td>
+            <td class="py-3 px-4 text-right text-slate-450">${date}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Update Profile statistics
+    function updateStats() {
+      const appliedCount = drives.filter(d => d.hasApplied).length;
+      const qualifiedCount = drives.filter(d => d.hasApplied && d.applicationStatus === 'Shortlisted').length;
+
+      document.getElementById('stat-applied').textContent = appliedCount;
+      document.getElementById('stat-qualified').textContent = qualifiedCount;
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateThemeIcon(isLight);
+    }
+
+    function updateThemeIcon(isLight) {
+      const sun = document.getElementById('theme-icon-sun');
+      const moon = document.getElementById('theme-icon-moon');
+      if (!sun || !moon) return;
+      if (isLight) {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+      } else {
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+      }
+    }
+
+    // Open/Close Profile Edit Modal
+    function openProfileEditModal() {
+      if (!studentProfile) return;
+      document.getElementById('pe-name').value = studentProfile.name;
+      document.getElementById('pe-email').value = studentProfile.email;
+      document.getElementById('pe-phone').value = studentProfile.phone;
+      document.getElementById('pe-branch').value = studentProfile.branch;
+      document.getElementById('pe-year').value = studentProfile.year;
+      document.getElementById('pe-cgpa').value = studentProfile.cgpa;
+      
+      document.getElementById('profile-modal').classList.remove('hidden');
+    }
+
+    function closeProfileEditModal() {
+      document.getElementById('profile-modal').classList.add('hidden');
+    }
+
+    // Submit Profile Edits
+    document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('pe-name').value,
+        email: document.getElementById('pe-email').value,
+        phone: document.getElementById('pe-phone').value,
+        branch: document.getElementById('pe-branch').value,
+        year: document.getElementById('pe-year').value,
+        cgpa: parseFloat(document.getElementById('pe-cgpa').value)
+      };
+
+      try {
+        const response = await fetch('/api/student/profile', {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast(data.message, 'success');
+          closeProfileEditModal();
+          
+          // Update cached login metadata
+          const userRaw = localStorage.getItem('user');
+          if (userRaw) {
+            const userObj = JSON.parse(userRaw);
+            userObj.name = payload.name;
+            userObj.branch = payload.branch;
+            userObj.cgpa = payload.cgpa;
+            localStorage.setItem('user', JSON.stringify(userObj));
+          }
+
+          // Reload dashboard details
+          await fetchProfile();
+          await fetchDrives();
+        } else {
+          showToast(data.message || 'Profile update failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    });
+
+    // Helper to escape HTML characters
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

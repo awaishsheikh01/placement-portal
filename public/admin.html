@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - PDMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/custom.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="flex flex-col min-h-screen">
+  <script>
+    // Initialize Theme immediately to prevent flash
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+
+  <div id="toast-container"></div>
+
+  <!-- Header -->
+  <header class="w-full py-4 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-slate-950/40 backdrop-blur-md sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-amber-600/20 rounded-xl border border-amber-500/30 text-amber-400">
+        <i data-lucide="shield" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-none">PDMS</h1>
+        <span class="text-[10px] text-amber-400 uppercase tracking-widest font-semibold">Admin Panel</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-btn" title="Toggle Light/Dark Mode">
+        <i data-lucide="sun" class="w-4 h-4 hidden" id="theme-icon-sun"></i>
+        <i data-lucide="moon" class="w-4 h-4" id="theme-icon-moon"></i>
+      </button>
+      <div class="hidden md:flex flex-col text-right">
+        <span class="text-sm font-semibold text-white">System Administrator</span>
+        <span class="text-[10px] text-amber-400 font-semibold tracking-wider uppercase">Console Access</span>
+      </div>
+      <button onclick="logout()" class="flex items-center gap-2 px-3 py-1.5 bg-red-950/30 border border-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-semibold rounded-lg transition-all">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <div class="flex-grow max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
+    
+    <!-- Analytics Cards Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <!-- Students -->
+      <div class="p-5 rounded-2xl glass-panel relative overflow-hidden">
+        <div class="absolute right-0 bottom-0 text-slate-900/40 -mr-2 -mb-2"><i data-lucide="users" class="w-16 h-16"></i></div>
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Students</div>
+        <div id="stat-students" class="text-3xl font-extrabold text-white mt-2">-</div>
+      </div>
+      <!-- Companies -->
+      <div class="p-5 rounded-2xl glass-panel relative overflow-hidden">
+        <div class="absolute right-0 bottom-0 text-slate-900/40 -mr-2 -mb-2"><i data-lucide="building" class="w-16 h-16"></i></div>
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Companies</div>
+        <div id="stat-companies" class="text-3xl font-extrabold text-white mt-2">-</div>
+      </div>
+      <!-- Campaigns -->
+      <div class="p-5 rounded-2xl glass-panel relative overflow-hidden">
+        <div class="absolute right-0 bottom-0 text-slate-900/40 -mr-2 -mb-2"><i data-lucide="briefcase" class="w-16 h-16"></i></div>
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Total Drives</div>
+        <div id="stat-drives" class="text-3xl font-extrabold text-white mt-2">-</div>
+      </div>
+      <!-- Applications -->
+      <div class="p-5 rounded-2xl glass-panel relative overflow-hidden">
+        <div class="absolute right-0 bottom-0 text-slate-900/40 -mr-2 -mb-2"><i data-lucide="folder-check" class="w-16 h-16"></i></div>
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Applications</div>
+        <div id="stat-applications" class="text-3xl font-extrabold text-emerald-450 mt-2">-</div>
+      </div>
+      <!-- Quizzes -->
+      <div class="p-5 rounded-2xl glass-panel relative overflow-hidden">
+        <div class="absolute right-0 bottom-0 text-slate-900/40 -mr-2 -mb-2"><i data-lucide="award" class="w-16 h-16"></i></div>
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Assessments</div>
+        <div id="stat-quizzes" class="text-3xl font-extrabold text-indigo-400 mt-2">-</div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Split -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Left: Drive Approval Module (7 cols) -->
+      <section class="lg:col-span-7 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+          <h2 class="text-lg font-black text-white flex items-center gap-2">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-amber-500"></i>
+            Drive Approval System
+          </h2>
+          <span id="pending-badge-count" class="px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full">0 Pending Approval</span>
+        </div>
+
+        <div id="drives-list" class="space-y-4">
+          <!-- Populated by JS -->
+          <div class="py-12 text-center text-slate-500 glass-panel rounded-2xl flex flex-col items-center justify-center gap-2">
+            <i data-lucide="briefcase" class="w-8 h-8 opacity-55"></i>
+            <span>Loading campaigns directory...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: User Registry (5 cols) -->
+      <section class="lg:col-span-5 space-y-4">
+        <div class="flex flex-col gap-3">
+          
+          <!-- Tab Selector -->
+          <div class="flex gap-2 border-b border-white/5 pb-px">
+            <button onclick="switchUserTab('students')" id="tab-btn-students" class="pb-2 px-2 border-b-2 border-amber-500 font-bold text-white text-xs flex items-center gap-1.5 transition-all">
+              <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-400"></i> Students Registry
+            </button>
+            <button onclick="switchUserTab('companies')" id="tab-btn-companies" class="pb-2 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all">
+              <i data-lucide="building" class="w-4 h-4 text-violet-400"></i> Recruiters Registry
+            </button>
+          </div>
+
+          <!-- Students panel -->
+          <div id="users-panel-students" class="space-y-3">
+            <div class="glass-panel rounded-2xl overflow-hidden max-h-[500px] overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-white/5 bg-slate-900/40 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                    <th class="py-2.5 px-4">Student</th>
+                    <th class="py-2.5 px-4 text-center">CGPA</th>
+                    <th class="py-2.5 px-4 text-right">Branch</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-body" class="divide-y divide-white/5 text-slate-300">
+                  <tr>
+                    <td colspan="3" class="py-6 text-center text-slate-500">Loading student profiles...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Companies panel -->
+          <div id="users-panel-companies" class="space-y-3 hidden">
+            <div class="glass-panel rounded-2xl overflow-hidden max-h-[500px] overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-white/5 bg-slate-900/40 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                    <th class="py-2.5 px-4">Recruiter / Company</th>
+                    <th class="py-2.5 px-4 text-right">Email</th>
+                  </tr>
+                </thead>
+                <tbody id="companies-table-body" class="divide-y divide-white/5 text-slate-300">
+                  <tr>
+                    <td colspan="2" class="py-6 text-center text-slate-500">Loading company registries...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full py-6 text-center border-t border-white/5 text-slate-500 text-xs mt-auto">
+    Placement Drive Management System (PDMS) © 2026.
+  </footer>
+
+  <script>
+    let drives = [];
+    let students = [];
+    let companies = [];
+
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let icon = 'info';
+      if (type === 'success') icon = 'check-circle';
+      if (type === 'error') icon = 'alert-triangle';
+      
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function getHeaders() {
+      const token = localStorage.getItem('token');
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    // Auth verification
+    window.addEventListener('load', () => {
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      updateThemeIcon(currentTheme === 'light');
+
+      const token = localStorage.getItem('token');
+      const userRaw = localStorage.getItem('user');
+      if (!token || !userRaw) {
+        window.location.href = '/index.html';
+        return;
+      }
+      const user = JSON.parse(userRaw);
+      if (user.role !== 'admin') {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      fetchStats();
+      fetchDrives();
+      fetchUsers();
+    });
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '/index.html';
+    }
+
+    // Switch right side sub-tabs
+    function switchUserTab(tabId) {
+      const tabStudents = document.getElementById('users-panel-students');
+      const tabCompanies = document.getElementById('users-panel-companies');
+      const btnStudents = document.getElementById('tab-btn-students');
+      const btnCompanies = document.getElementById('tab-btn-companies');
+
+      if (tabId === 'students') {
+        tabStudents.classList.remove('hidden');
+        tabCompanies.classList.add('hidden');
+        btnStudents.className = 'pb-2 px-2 border-b-2 border-amber-500 font-bold text-white text-xs flex items-center gap-1.5 transition-all';
+        btnCompanies.className = 'pb-2 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all';
+      } else {
+        tabStudents.classList.add('hidden');
+        tabCompanies.classList.remove('hidden');
+        btnStudents.className = 'pb-2 px-2 border-b-2 border-transparent text-slate-400 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all';
+        btnCompanies.className = 'pb-2 px-2 border-b-2 border-amber-500 font-bold text-white text-xs flex items-center gap-1.5 transition-all';
+      }
+    }
+
+    // Fetch live statistics
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/admin/stats', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Stats retrieval failed.');
+        const stats = await response.json();
+
+        document.getElementById('stat-students').textContent = stats.totalStudents;
+        document.getElementById('stat-companies').textContent = stats.totalCompanies;
+        document.getElementById('stat-drives').textContent = stats.totalDrives;
+        document.getElementById('stat-applications').textContent = stats.totalApplications;
+        document.getElementById('stat-quizzes').textContent = stats.totalQuizzes;
+      } catch (err) {
+        showToast('Error retrieving dashboard statistics.', 'error');
+      }
+    }
+
+    // Fetch placement drives list
+    async function fetchDrives() {
+      try {
+        const response = await fetch('/api/admin/drives', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Drives fetch failed.');
+        drives = await response.json();
+
+        const pendingCount = drives.filter(d => d.status === 'Pending').length;
+        document.getElementById('pending-badge-count').textContent = `${pendingCount} Pending Approval`;
+
+        renderDrives();
+      } catch (err) {
+        showToast('Error syncing drives directory.', 'error');
+      }
+    }
+
+    // Render drives in center board
+    function renderDrives() {
+      const container = document.getElementById('drives-list');
+      if (drives.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-500 glass-panel rounded-2xl flex flex-col items-center justify-center gap-2">
+            <i data-lucide="briefcase" class="w-8 h-8 opacity-55"></i>
+            <span>No placement drives have been created yet.</span>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      // Sort pending first, then newest
+      const sortedDrives = [...drives].sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      container.innerHTML = sortedDrives.map(drive => {
+        const dateFormatted = new Date(drive.driveDate).toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', year: 'numeric'
+        });
+        const deadlineFormatted = new Date(drive.applicationDeadline).toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+        });
+
+        let actionHtml = '';
+        let statusBadge = '';
+
+        if (drive.status === 'Pending') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400">Awaiting Validation</span>`;
+          actionHtml = `
+            <div class="flex gap-2">
+              <button onclick="approveDrive('${drive._id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all flex items-center gap-1">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Approve
+              </button>
+              <button onclick="rejectDrive('${drive._id}')" class="px-3 py-1.5 bg-red-950/20 border border-red-500/20 hover:border-red-500/50 text-red-400 font-bold rounded-lg transition-all flex items-center gap-1">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i> Reject
+              </button>
+            </div>`;
+        } else if (drive.status === 'Approved') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">Approved</span>`;
+          actionHtml = `<span class="text-xs text-emerald-405 font-medium flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Published & Live</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 border border-red-500/20 text-red-400">Rejected</span>`;
+          actionHtml = `<span class="text-xs text-red-405 font-medium flex items-center gap-1"><i data-lucide="x-circle" class="w-4 h-4"></i> Validation Failed</span>`;
+        }
+
+        if (drive.isClosed) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-500">Campaign Closed</span>`;
+        }
+
+        return `
+          <div class="glass-panel p-5 rounded-2xl space-y-4 ${drive.status === 'Pending' ? 'border-l-4 border-l-amber-500 bg-amber-500/[0.02]' : ''}">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-base font-bold text-white leading-tight">${drive.jobRole}</h4>
+                <p class="text-xs text-slate-450 mt-0.5">Offered by: <strong class="text-white">${drive.companyName}</strong> | Date: ${dateFormatted}</p>
+              </div>
+              ${statusBadge}
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-slate-300 bg-slate-950/25 p-3 rounded-xl border border-white/5">
+              <div><span class="text-slate-450 block uppercase text-[8px] font-bold">Package</span><strong>${drive.package}</strong></div>
+              <div><span class="text-slate-450 block uppercase text-[8px] font-bold">Min CGPA</span><strong>${drive.minimumCgpa.toFixed(1)}</strong></div>
+              <div><span class="text-slate-450 block uppercase text-[8px] font-bold">Target Branches</span><strong class="truncate block" title="${drive.eligibleBranches.join(', ')}">${drive.eligibleBranches.join(', ')}</strong></div>
+              <div><span class="text-slate-450 block uppercase text-[8px] font-bold">Deadline</span><strong>${deadlineFormatted}</strong></div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-white/5">
+              <span class="text-xs text-slate-450 font-medium">${drive.applicants.length} applied candidate${drive.applicants.length !== 1 ? 's' : ''}</span>
+              ${actionHtml}
+            </div>
+          </div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // Approve drive
+    async function approveDrive(driveId) {
+      try {
+        const response = await fetch(`/api/admin/drives/${driveId}/approve`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        if (response.ok) {
+          showToast('Drive approved and published.', 'success');
+          fetchDrives();
+          fetchStats();
+        } else {
+          showToast('Approval action failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    }
+
+    // Reject drive
+    async function rejectDrive(driveId) {
+      try {
+        const response = await fetch(`/api/admin/drives/${driveId}/reject`, {
+          method: 'POST',
+          headers: getHeaders()
+        });
+        if (response.ok) {
+          showToast('Drive rejected.', 'success');
+          fetchDrives();
+          fetchStats();
+        } else {
+          showToast('Rejection action failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Connection failed.', 'error');
+      }
+    }
+
+    // Fetch user lists
+    async function fetchUsers() {
+      try {
+        const response = await fetch('/api/admin/users', { headers: getHeaders() });
+        if (!response.ok) throw new Error('Users retrieval failed.');
+        const data = await response.json();
+        
+        students = data.students;
+        companies = data.companies;
+
+        renderStudentsTable();
+        renderCompaniesTable();
+      } catch (err) {
+        showToast('Error syncing user registries.', 'error');
+      }
+    }
+
+    // Render students in right panel list
+    function renderStudentsTable() {
+      const tbody = document.getElementById('students-table-body');
+      if (students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500">No registered students found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.map(student => `
+        <tr class="hover:bg-slate-900/20">
+          <td class="py-2.5 px-4">
+            <div class="font-bold text-white">${student.name}</div>
+            <div class="text-[9px] text-slate-400 font-medium">${student.enrollmentNumber}</div>
+          </td>
+          <td class="py-2.5 px-4 text-center font-bold text-emerald-400">${student.cgpa.toFixed(2)}</td>
+          <td class="py-2.5 px-4 text-right text-slate-400 font-medium">${student.branch}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Render companies in right panel list
+    function renderCompaniesTable() {
+      const tbody = document.getElementById('companies-table-body');
+      if (companies.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-slate-500">No registered recruiters found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = companies.map(company => `
+        <tr class="hover:bg-slate-900/20">
+          <td class="py-2.5 px-4 font-bold text-white">${company.companyName}</td>
+          <td class="py-2.5 px-4 text-right text-slate-400 font-semibold truncate max-w-[150px]">${company.email}</td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateThemeIcon(isLight);
+    }
+
+    function updateThemeIcon(isLight) {
+      const sun = document.getElementById('theme-icon-sun');
+      const moon = document.getElementById('theme-icon-moon');
+      if (!sun || !moon) return;
+      if (isLight) {
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+      } else {
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
