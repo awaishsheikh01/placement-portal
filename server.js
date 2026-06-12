@@ -36,6 +36,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pdms')
     console.error('================================================================');
   });
 
+// Database connection readiness check middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') && mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      message: 'Database connection offline. Please configure MONGODB_URI in Vercel settings.'
+    });
+  }
+  next();
+});
+
 // ==========================================
 // 1. AUTHENTICATION & REGISTRATION ENDPOINTS
 // ==========================================
