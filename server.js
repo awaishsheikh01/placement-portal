@@ -24,24 +24,32 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database connection with graceful fail
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pdms')
-  .then(() => console.log('Successfully connected to MongoDB.'))
-  .catch(err => {
-    console.error('================================================================');
-    console.error('DATABASE CONNECTION ERROR: Could not connect to MongoDB.');
-    console.error('Please make sure your MongoDB server is running locally (mongod).');
-    console.error('The server will continue to run, but database actions will fail.');
-    console.error('Error Details:', err.message);
-    console.error('================================================================');
+// Database connection helper for serverless environment
+let isConnected = false;
+const connectToDatabase = async () => {
+  if (isConnected || mongoose.connection.readyState === 1) {
+    return;
+  }
+  console.log('Connecting to database...');
+  await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pdms', {
+    serverSelectionTimeoutMS: 5000 // fail fast after 5 seconds
   });
+  isConnected = true;
+  console.log('Successfully connected to MongoDB.');
+};
 
-// Database connection readiness check middleware
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/') && mongoose.connection.readyState !== 1) {
-    return res.status(503).json({
-      message: 'Database connection offline. Please configure MONGODB_URI in Vercel settings.'
-    });
+// Database connection middleware for serverless API routes
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    try {
+      await connectToDatabase();
+    } catch (err) {
+      console.error('DATABASE CONNECTION ERROR:', err.message);
+      return res.status(503).json({
+        message: 'Database connection offline. Please check MONGODB_URI configuration.',
+        error: err.message
+      });
+    }
   }
   next();
 });
