@@ -68,9 +68,11 @@ app.post('/api/auth/register-student', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
+    const cleanEnrollment = enrollmentNumber.trim().toUpperCase();
+
     // Check duplicates
     const existingStudent = await Student.findOne({ 
-      $or: [{ email }, { enrollmentNumber }] 
+      $or: [{ email }, { enrollmentNumber: cleanEnrollment }] 
     });
     if (existingStudent) {
       return res.status(400).json({ message: 'Email or Enrollment Number already registered.' });
@@ -78,7 +80,7 @@ app.post('/api/auth/register-student', async (req, res) => {
 
     const newStudent = new Student({
       name,
-      enrollmentNumber,
+      enrollmentNumber: cleanEnrollment,
       email,
       phone,
       branch,
@@ -102,7 +104,8 @@ app.post('/api/auth/login-student', async (req, res) => {
       return res.status(400).json({ message: 'Enrollment Number and Password are required.' });
     }
 
-    const student = await Student.findOne({ enrollmentNumber });
+    const cleanEnrollment = enrollmentNumber.trim().toUpperCase();
+    const student = await Student.findOne({ enrollmentNumber: cleanEnrollment });
     if (!student) {
       return res.status(400).json({ message: 'Invalid credentials.' });
     }
